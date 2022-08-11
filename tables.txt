@@ -1,0 +1,35 @@
+CREATE TABLE posts (
+	id serial PRIMARY KEY,
+	title text,
+	body text, 
+	img text,
+	post_date date
+);
+
+CREATE TABLE tags (
+	tag_id serial PRIMARY KEY,
+	tag VARCHAR(15) NOT NULL UNIQUE
+);
+
+CREATE TABLE posts_with_tags (
+	post_id int,
+	tags_id int,
+	
+	CONSTRAINT post_id_fk FOREIGN KEY (post_id) REFERENCES posts(id) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT tag_id_fk FOREIGN KEY (tags_id) REFERENCES tags(tag_id) ON UPDATE CASCADE ON DELETE CASCADE,
+	
+	CONSTRAINT post_with_tags_pk PRIMARY KEY (post_id, tags_id)
+);
+
+CREATE TABLE users (
+	user_id serial PRIMARY KEY,
+	name VARCHAR(64),
+	password VARCHAR(256) NOT NULL,
+	email text UNIQUE NOT NULL,
+	joined TIMESTAMP DEFAULT NOW()
+);
+
+DELETE FROM posts;
+DELETE FROM tags;
+DELETE FROM users;
+DELETE FROM login;
