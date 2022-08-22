@@ -19,11 +19,12 @@ var PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-db.select("*")
-  .from("users")
-  .then((data) => {
-    console.log(data);
-  });
+// db.select("*")
+//   .from("users")
+//   .then((data) => {
+//     console.log(data);
+//   });
+
 
 //
 // GET ALL POSTS
@@ -34,16 +35,17 @@ app.get("/posts", async (req, res) => {
     .select("*")
     .from("posts")
     .orderBy("id", "desc")
-    .then(console.log("Getting all posts"));
+    //.then(console.log("Getting all posts"));
   // console.log(all)
 
   const posts = all.map((post) => {
     post = { ...post, tags: [] };
+    //console.log(post.post_date);
+    post.post_date = new Date( post.post_date.getTime() - post.post_date.getTimezoneOffset() * 60000 ) // from stackoverflow.com
     post.post_date = new Date(post.post_date).toISOString().split("T")[0];
+    
     return post;
   });
-
-  //console.log(posts);
 
   for (const post of posts) {
     const posts_tags = await db
@@ -61,6 +63,7 @@ app.get("/posts", async (req, res) => {
   }
   res.send(posts);
 });
+
 
 //
 //GET SINGLE POST (NO TAGS NEEDED)
@@ -84,16 +87,6 @@ app.get("/posts/:id", async (req, res) => {
   res.send(singlePost[0]);
 });
 
-//
-// DELETE POST
-//
-
-app.delete("/post/:id", async (req, res) => {
-  const id = req.params.id;
-  await db("posts").where("id", "=", id).del();
-  console.log("Method called is -- " + req.method);
-  res.end();
-});
 
 //
 // CREATE POST
@@ -115,7 +108,6 @@ app.post("/create", async (req, res) => {
     .then(console.log("inserted posts"));
 
   let postId = postContent[0].id;
-  //console.log(postId);
 
   for (const tag of tags) {
     let tag_id = await db.select("tag_id").from("tags").where("tag", "=", tag);
@@ -128,7 +120,6 @@ app.post("/create", async (req, res) => {
       tag_id = tag_id[0];
     }
     tag_id = tag_id.tag_id;
-    console.log(tag_id);
 
     await db("posts_with_tags").insert({
       post_id: postId,
@@ -137,6 +128,7 @@ app.post("/create", async (req, res) => {
 
     tag_ids.push(tag_id);
   }
+  console.log(postContent[0].post_date);
 
   res.json(
     postContent[0].id +
@@ -153,15 +145,48 @@ app.post("/create", async (req, res) => {
   );
 });
 
+
+//
+// DELETE POST
+//
+
+app.delete("/post/:id", async (req, res) => {
+  const id = req.params.id;
+  await db("posts").where("id", "=", id).del();
+  //console.log("Method called is -- " + req.method);
+  res.end();
+});
+
+
+
 //
 // LOGIN
 //
 
 app.post("/login", (req, res) => {
-  const [email, password] = req.body;
-
-  res.json("login");
+  db.select('email', 'password').from('users')
+  .where('email', '=', req.body.email)
+  .then(data => {
+    console.log(req.body.email)
+    const isValid = bcrypt.compare(req.body.password, data[0].password)
+    console.log(isValid)
+    if(isValid) {
+      return db
+      .select('user_id', 'name', 'email', 'joined')
+      .from('users')
+      .where('email', '=', req.body.email)
+      .then(user => {
+        console.log(user)
+        res.json(user[0])
+      })
+      .catch(err => res.status(400).json('Unable to get user'))
+    } else {
+      res.status(400).json('Wrong Email or Password')
+    }
+  })
+  .catch(err => res.status(400).json('Wrong Email or Password'))
 });
+
 
 //
 // REGISTER
@@ -176,33 +201,8 @@ app.post("/register", async (req, res) => {
       email: email,
       name: name,
       password: hash,
-    });
-
-  res.status(200).json("ok")
-
-  // db.transaction(trx => {
-  //     trx.insert({
-  //         hash: hash,
-  //         email: email
-  //     })
-  //     .into('login')
-  //     .returning('email')
-  //     .then(loginEmail => {
-  //         return trx('users')
-  //         .returning('*')
-  //         .insert({
-  //             email: loginEmail,
-  //             name: name,
-  //             joined: new Date()
-  //         })
-  //         .then(user => {
-  //             res.json(user[0])
-  //         })
-  //     })
-  //     .then(trx.commit)
-  //     .catch(trx.rollback)
-  // })
-  // .catch(err => res.status(400).json('Unable to register'))
+    }).then(res.status(200).json("ok"))
+    .catch(err => res.status(400).json('Unable to register'))
 });
 
 app.listen(3000, () => {
