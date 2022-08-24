@@ -16,7 +16,7 @@ const db = knex({
 });
 
 const app = express();
-var PORT = 3000;
+const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
@@ -32,7 +32,7 @@ app.get("/posts", async (req, res) => {
 
   const posts = all.map((post) => {
     post = { ...post, tags: [] };
-    post.post_date = new Date( post.post_date.getTime() - post.post_date.getTimezoneOffset() * 60000 ) // from stackoverflow.com
+    post.post_date = new Date( post.post_date.getTime() - post.post_date.getTimezoneOffset() * 60000 )
     post.post_date = new Date(post.post_date).toISOString().split("T")[0];
     
     return post;
