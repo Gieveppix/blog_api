@@ -3,7 +3,10 @@ CREATE TABLE posts (
 	title text,
 	body text, 
 	img text,
-	post_date date
+	post_date date,
+	users_id int,
+	CONSTRAINT user_id_fk FOREIGN KEY (users_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+	
 );
 
 CREATE TABLE tags (
@@ -19,6 +22,21 @@ CREATE TABLE posts_with_tags (
 	CONSTRAINT tag_id_fk FOREIGN KEY (tags_id) REFERENCES tags(tag_id) ON UPDATE CASCADE ON DELETE CASCADE,
 	
 	CONSTRAINT post_with_tags_pk PRIMARY KEY (post_id, tags_id)
+);
+
+CREATE TABLE comments (
+	comment_id serial PRIMARY KEY,
+	comment text
+);
+
+CREATE TABLE post_comments (
+	post_id int,
+	comment_id int,
+	
+	CONSTRAINT post_id_fk FOREIGN KEY (post_id) REFERENCES posts(id) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT comment_id_fk FOREIGN KEY (comment_id) REFERENCES comments(comment_id) ON UPDATE CASCADE ON DELETE CASCADE,
+	
+	CONSTRAINT post_comment_pk PRIMARY KEY (post_id, comment_id)
 );
 
 CREATE TABLE users (
