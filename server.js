@@ -2,6 +2,7 @@ const express = require("express");
 const knex = require("knex");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
+const { check, validationResult } = require('express-validator');
 
 const db = knex({
   client: "pg",
@@ -19,13 +20,6 @@ var PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// db.select("*")
-//   .from("users")
-//   .then((data) => {
-//     console.log(data);
-//   });
-
-
 //
 // GET ALL POSTS
 //
@@ -35,12 +29,9 @@ app.get("/posts", async (req, res) => {
     .select("*")
     .from("posts")
     .orderBy("id", "desc")
-    //.then(console.log("Getting all posts"));
-  // console.log(all)
 
   const posts = all.map((post) => {
     post = { ...post, tags: [] };
-    //console.log(post.post_date);
     post.post_date = new Date( post.post_date.getTime() - post.post_date.getTimezoneOffset() * 60000 ) // from stackoverflow.com
     post.post_date = new Date(post.post_date).toISOString().split("T")[0];
     
@@ -66,23 +57,17 @@ app.get("/posts", async (req, res) => {
 
 
 //
-//GET SINGLE POST (NO TAGS NEEDED)
+//GET SINGLE POST
 //
 
 app.get("/posts/:id", async (req, res) => {
   let id = req.params.id;
-  //const { title, body } = req.body
 
   const singlePost = await db
-    .select("id", "title", "body")
+    .select("id", "title", "body", "users_id")
     .from("posts")
     .where("id", "=", id)
     .limit(1);
-
-  console.log("Getting single post: " + id);
-  // console.log(singlePost[0].title);
-  // console.log("BODYYYY", singlePost[0].body);
-  // console.log(singlePost)
 
   res.send(singlePost[0]);
 });
@@ -93,8 +78,9 @@ app.get("/posts/:id", async (req, res) => {
 //
 
 app.post("/create", async (req, res) => {
-  const { title, body, img, tags } = req.body;
+  const { title, body, img, tags, users_id } = req.body;
 
+  console.log(req.body);
   const tag_ids = [];
 
   let postContent = await db("posts")
@@ -103,8 +89,9 @@ app.post("/create", async (req, res) => {
       body: body,
       img: img,
       post_date: new Date(),
+      users_id: users_id,
     })
-    .returning(["id", "title", "body", "img", "post_date"])
+    .returning(["id", "title", "body", "img", "post_date", "users_id"])
     .then(console.log("inserted posts"));
 
   let postId = postContent[0].id;
@@ -153,11 +140,8 @@ app.post("/create", async (req, res) => {
 app.delete("/post/:id", async (req, res) => {
   const id = req.params.id;
   await db("posts").where("id", "=", id).del();
-  //console.log("Method called is -- " + req.method);
   res.end();
 });
-
-
 
 //
 // LOGIN
@@ -189,13 +173,24 @@ app.post("/login", (req, res) => {
 
 
 //
-// REGISTER
+// REGISTER + VALIDATE
 //
 
-app.post("/register", async (req, res) => {
+app.post("/register", [
+  check('email', 'Your email is not valid').not().isEmpty().isEmail().normalizeEmail(),
+  check('password', 'Your password must be at least 5 characters').not().isEmpty().isLength({min: 5}),
+],
+async (req, res) => {
   const saltRounds = 10;
 
   const { email, name, password } = req.body;
+
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).jsonp(errors.array());
+  } 
+  else {
   const hash = await bcrypt.hash(password, saltRounds);
     await db("users").insert({
       email: email,
@@ -203,7 +198,9 @@ app.post("/register", async (req, res) => {
       password: hash,
     }).then(res.status(200).json("ok"))
     .catch(err => res.status(400).json('Unable to register'))
+  }
 });
+
 
 app.listen(3000, () => {
   console.log("App is up on port " + PORT);
