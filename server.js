@@ -150,10 +150,10 @@ app.delete("/post/:id", async (req, res) => {
 app.post("/login", (req, res) => {
   db.select('email', 'password').from('users')
   .where('email', '=', req.body.email)
-  .then(data => {
+  .then(async data => {
     console.log(req.body.email)
-    const isValid = bcrypt.compare(req.body.password, data[0].password)
-    console.log(isValid)
+    const isValid = await bcrypt.compare(req.body.password, data[0].password)
+    
     if(isValid) {
       return db
       .select('user_id', 'name', 'email', 'joined')
@@ -165,10 +165,10 @@ app.post("/login", (req, res) => {
       })
       .catch(err => res.status(400).json('Unable to get user'))
     } else {
-      res.status(400).json('Wrong Email or Password')
+      res.status(400).json('')
     }
   })
-  .catch(err => res.status(400).json('Wrong Email or Password'))
+  .catch(err => res.status(400).json(''))
 });
 
 
