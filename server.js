@@ -77,7 +77,6 @@ app.get("/posts/:id", async (req, res) => {
 app.post("/create", async (req, res) => {
   const { title, body, img, tags, users_id } = req.body;
 
-  console.log(req.body);
   const tag_ids = [];
 
   let postContent = await db("posts")
@@ -112,7 +111,7 @@ app.post("/create", async (req, res) => {
 
     tag_ids.push(tag_id);
   }
-  console.log(postContent[0].post_date);
+  // console.log(postContent[0].post_date);
 
   res.json(
     postContent[0].id +
@@ -148,7 +147,6 @@ app.post("/login", (req, res) => {
     .from("users")
     .where("email", "=", req.body.email)
     .then(async (data) => {
-      console.log(req.body.email);
       const isValid = await bcrypt.compare(req.body.password, data[0].password);
 
       if (isValid) {
@@ -157,7 +155,6 @@ app.post("/login", (req, res) => {
           .from("users")
           .where("email", "=", req.body.email)
           .then((user) => {
-            console.log(user);
             res.json(user[0]);
           })
           .catch((err) => res.status(400).json("Unable to get user"));
@@ -232,7 +229,6 @@ app.get("/comments", async (req, res) => {
     return comment;
   });
 
-  console.log(comments);
   res.send(comments);
 });
 
@@ -242,7 +238,7 @@ app.get("/comments", async (req, res) => {
 
 app.get("/comments/:id", async (req, res) => {
   let id = req.params.id;
-
+  console.log("COMMENTSSSS", id);
   const all = await db
     .select("comments.*", "users.name as user_name")
     .from("comments")
@@ -260,8 +256,36 @@ app.get("/comments/:id", async (req, res) => {
       .split("T")[0];
     return comment;
   });
-  
+
   res.send(comments);
+});
+
+//
+// ADD COMMENT
+//
+
+app.post("/comments", async ( req, res ) => {
+  // u body primit post id, user id i komentar
+  //dobio si komentar
+  const { user_id, post_id, comment } = req.body;
+
+  await db("comments")
+    .insert({
+      user_id: user_id,
+      post_id: post_id,
+      comment: comment,
+    })
+    .then(res.status(200).json("ok"))
+});
+
+//
+// DELETE COMMENT
+//
+
+app.delete("/comments/:id", async (req, res) => {
+  const id = req.params.id;
+  await db("comments").where("id", "=", id).del();
+  res.end();
 });
 
 app.listen(3000, () => {
