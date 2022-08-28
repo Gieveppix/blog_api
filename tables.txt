@@ -25,8 +25,13 @@ CREATE TABLE posts_with_tags (
 );
 
 CREATE TABLE comments (
-	comment_id serial PRIMARY KEY,
-	comment text
+	id serial PRIMARY KEY,
+	user_id int,
+	post_id int,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT post_id_fk_comments FOREIGN KEY (post_id) REFERENCES posts(id) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT user_id_fk_comments FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+	comment text NOT NULL
 );
 
 CREATE TABLE post_comments (
@@ -46,6 +51,8 @@ CREATE TABLE users (
 	email text UNIQUE NOT NULL,
 	joined TIMESTAMP DEFAULT NOW()
 );
+
+ALTER TABLE users ADD UNIQUE (name); // mb
 
 DELETE FROM posts;
 DELETE FROM tags;
