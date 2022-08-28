@@ -25,7 +25,11 @@ app.use(express.json());
 //
 
 app.get("/posts", async (req, res) => {
-  const all = await db.select("*").from("posts").orderBy("id", "desc");
+  const all = await db
+    .select("posts.*", "users.name as user_name")
+    .from("posts")
+    .leftJoin("users", "posts.users_id", "users.user_id")
+    .orderBy("id", "desc");
 
   const posts = all.map((post) => {
     post = { ...post, tags: [] };
@@ -75,7 +79,7 @@ app.get("/posts/:id", async (req, res) => {
 //
 
 app.post("/create", async (req, res) => {
-  const { title, body, img, tags, users_id } = req.body;
+  const { title, body, img, tags, users_id,  } = req.body;
 
   const tag_ids = [];
 
@@ -215,7 +219,8 @@ app.get("/comments", async (req, res) => {
   const all = await db
     .select("comments.*", "users.name as user_name")
     .from("comments")
-    .leftJoin("users", "comments.user_id", "users.user_id");
+    .leftJoin("users", "comments.user_id", "users.user_id")
+    .orderBy("id", "desc");
 
   const comments = all.map((comment) => {
     comment = { ...comment };
@@ -238,7 +243,6 @@ app.get("/comments", async (req, res) => {
 
 app.get("/comments/:id", async (req, res) => {
   let id = req.params.id;
-  console.log("COMMENTSSSS", id);
   const all = await db
     .select("comments.*", "users.name as user_name")
     .from("comments")
